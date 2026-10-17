@@ -18,15 +18,25 @@ class DoctrineHookTest extends TestCase
 {
     private ?string $root = null;
     private string|false $composer = false;
+    /** @var array{0: ?string, 1: ?string} $_SERVER's and $_ENV's COMPOSER (Symfony's simple-phpunit sets both) */
+    private array $globals = [null, null];
 
     protected function setUp(): void
     {
         $this->composer = getenv('COMPOSER');
+        $this->globals = [$_SERVER['COMPOSER'] ?? null, $_ENV['COMPOSER'] ?? null];
     }
 
     protected function tearDown(): void
     {
         false === $this->composer ? putenv('COMPOSER') : putenv('COMPOSER=' . $this->composer);
+        foreach ([0 => '_SERVER', 1 => '_ENV'] as $i => $global) {
+            if (null === $this->globals[$i]) {
+                unset($GLOBALS[$global]['COMPOSER']);
+            } else {
+                $GLOBALS[$global]['COMPOSER'] = $this->globals[$i];
+            }
+        }
         if (null !== $this->root) {
             exec('rm -rf ' . escapeshellarg($this->root));
         }
@@ -85,7 +95,10 @@ class DoctrineHookTest extends TestCase
         $this->root = sys_get_temp_dir() . '/base-plugin-doctrine-' . bin2hex(random_bytes(4));
         mkdir($this->root . '/vendor', 0777, true);
         file_put_contents($this->root . '/composer.json', '{}');
+        // Composer reads $_SERVER, then $_ENV, then the environment (Platform::getEnv()): in an application's
+        // suite run by Symfony's simple-phpunit, $_SERVER['COMPOSER'] is its own composer.json.
         putenv('COMPOSER=' . $this->root . '/composer.json');
+        $_SERVER['COMPOSER'] = $_ENV['COMPOSER'] = $this->root . '/composer.json';
 
         foreach ($cores as $package => $composer) {
             mkdir($this->root . '/vendor/' . $package, 0777, true);
