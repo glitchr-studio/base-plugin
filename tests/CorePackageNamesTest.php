@@ -49,6 +49,14 @@ class CorePackageNamesTest extends TestCase
      */
     public function testTheStubsFindTheCoreWhereverItIs(array $installed, string $expected): void
     {
+        // The process below needs Composer's classes (Composer\IO\NullIO), which the plugin's own
+        // harness installs (composer/composer, require-dev) and an application does not: run in an
+        // application's vendor suite (lesringostars runs vendor/glitchr/base-plugin/tests), there is
+        // no vendor/autoload.php beside the plugin to require.
+        if (!is_file(dirname(__DIR__) . '/vendor/autoload.php')) {
+            self::markTestSkipped('Needs the plugin\'s own vendor/autoload.php (composer install in the plugin): absent in an application\'s vendor.');
+        }
+
         // The plugin copied into a project's vendor/glitchr/base-plugin, beside the core.
         $this->root = sys_get_temp_dir() . '/base-plugin-' . bin2hex(random_bytes(4));
         $vendor = $this->root . '/vendor';
