@@ -112,8 +112,27 @@ abstract class AbstractHook implements HookInterface
         return dirname(realpath(Factory::getComposerFile()));
     }
 
+    /**
+     * The names the patched package is installed under: its own, and the
+     * former ones a renamed package replaces (a hook says them by overriding
+     * this). The hook runs for an operation on any of them.
+     *
+     * @return string[]
+     */
+    public function getPackageNames(): array
+    {
+        return [$this->getPackageName()];
+    }
+
+    /** The patched package's directory: the first of its names that is installed. */
     protected function getBundleDir(): string
     {
+        foreach ($this->getPackageNames() as $packageName) {
+            if (is_dir($this->getVendorDir() . '/' . $packageName)) {
+                return $this->getVendorDir() . '/' . $packageName;
+            }
+        }
+
         return $this->getVendorDir() . '/' . $this->getPackageName();
     }
 

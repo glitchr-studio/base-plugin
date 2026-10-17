@@ -6,6 +6,9 @@ use Composer\IO\IOInterface;
 
 abstract class AbstractStub implements StubInterface
 {
+    /** omnibase's core, by its name, then by its former one. */
+    public const CORE_PACKAGES = ['omniscient/omnibase', 'glitchr/omnibase'];
+
     public IOInterface $io;
 
     public function __construct(IOInterface $io)
@@ -62,9 +65,22 @@ abstract class AbstractStub implements StubInterface
         return basename($classFile, '.php');
     }
 
+    /**
+     * The core's classes the stubs extend: vendor/omniscient/omnibase (its name
+     * since 2026-10-18), else vendor/glitchr/omnibase (its former name, which
+     * it replaces), wherever this plugin is installed beside them.
+     */
     public function getClassPath(): string
     {
-        return dirname(__FILE__, 4) . "/omnibase/src/".$this->getStubName();
+        $vendorDir = dirname(__FILE__, 5);
+        foreach (self::CORE_PACKAGES as $package) {
+            $path = $vendorDir . "/" . $package . "/src/" . $this->getStubName();
+            if (is_dir($vendorDir . "/" . $package)) {
+                return $path;
+            }
+        }
+
+        return $vendorDir . "/" . self::CORE_PACKAGES[0] . "/src/" . $this->getStubName();
     }
 
     public function getClassFiles(): array

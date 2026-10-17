@@ -10,7 +10,13 @@ final class ConsoleApplicationPackageHook extends AbstractHook
 {
     public function getPackageName(): string
     {
-        return 'glitchr/omnibase';
+        return 'omniscient/omnibase';
+    }
+
+    /** omnibase's core by its name, and by its former one (which it replaces). */
+    public function getPackageNames(): array
+    {
+        return ['omniscient/omnibase', 'glitchr/omnibase'];
     }
 
     public function getPackageRequirements(): string

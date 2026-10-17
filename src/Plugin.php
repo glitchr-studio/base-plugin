@@ -116,7 +116,7 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         // Only the self-install replay is affected; a hook triggered by its own
         // package is by definition already on disk.
         if ($this->getPackageName() !== $packageName) return false;
-        if ($class->getPackageName() === $packageName) return false;
+        if (in_array($packageName, self::hookPackageNames($class), true)) return false;
 
         // Resolve against the PROJECT's vendor-dir, never Composer\InstalledVersions.
         // Inside a plugin that class answers for COMPOSER'S OWN dependency set,
@@ -128,15 +128,33 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         $vendorDir = $this->composer?->getConfig()?->get('vendor-dir');
         if (!$vendorDir) return false;
 
-        $path = rtrim($vendorDir, '/') . '/' . $class->getPackageName();
-
         // Require a real, non-empty directory: composer creates the target
         // directory before it finishes extracting into it, so is_dir() alone
-        // would go true a moment too early.
-        if (!is_dir($path)) return true;
+        // would go true a moment too early. Any of the hook's names will do.
+        foreach (self::hookPackageNames($class) as $name) {
+            $path = rtrim($vendorDir, '/') . '/' . $name;
+            $entries = is_dir($path) ? @scandir($path) : false;
+            if ($entries !== false && count($entries) > 2) return false;
+        }
 
-        $entries = @scandir($path);
-        return $entries === false || count($entries) <= 2;
+        return true;
+    }
+
+    /** @return string[] the names a hook patches its package under (HookInterface has getPackageName() alone). */
+    private static function hookPackageNames(object $class): array
+    {
+        return method_exists($class, 'getPackageNames') ? $class->getPackageNames() : [$class->getPackageName()];
+    }
+
+    private static function isHookInstalled(object $class): bool
+    {
+        foreach (self::hookPackageNames($class) as $name) {
+            if (InstalledVersions::isInstalled($name)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private array $installedPackageNames = [];
@@ -162,11 +180,11 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
                 continue;
             }
  
-            if (!InstalledVersions::isInstalled($class->getPackageName())) {
+            if (!self::isHookInstalled($class)) {
                 continue;
             }
 
-            if ($class->getPackageName() != $packageName && $this->getPackageName() != $packageName) {
+            if (!in_array($packageName, self::hookPackageNames($class), true) && $this->getPackageName() != $packageName) {
                 continue;
             }
             if ($this->isTargetNotExtracted($class, $packageName)) {
@@ -203,11 +221,11 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
                 continue;
             }
 
-            if (!InstalledVersions::isInstalled($class->getPackageName())) {
+            if (!self::isHookInstalled($class)) {
                 continue;
             }
 
-            if ($class->getPackageName() != $packageName && $this->getPackageName() != $packageName) {
+            if (!in_array($packageName, self::hookPackageNames($class), true) && $this->getPackageName() != $packageName) {
                 continue;
             }
 
@@ -247,10 +265,10 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
                 continue;
             }
 
-            if (!InstalledVersions::isInstalled($class->getPackageName())) {
+            if (!self::isHookInstalled($class)) {
                 continue;
             }
-            if ($class->getPackageName() != $packageName && $this->getPackageName() != $packageName) {
+            if (!in_array($packageName, self::hookPackageNames($class), true) && $this->getPackageName() != $packageName) {
                 continue;
             }
             if (!$class->checkValidityVersion($event)) {
