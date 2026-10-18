@@ -1,5 +1,23 @@
 # Base Plugin
 
+> **Deprecated - replaced by [omnibridge/composer](https://github.com/glitchr-studio/omnibridge-composer).**
+> Since omniscient/omnibase 4.0 the core no longer requires this plugin: it requires
+> omnibridge/composer, a Composer plugin that knows no package, and declares in its own
+> `composer.json` (`extra.omnibridge`) what this plugin hard-coded - its stub providers
+> (`Base\Bridge\Composer\Stub\*`: the `App\` stubs of Entity, Enum, Form, Notifier and
+> Repository, now in `vendor/composer/omnibridge/stubs/`) and its one remaining patch
+> (symfony/process: the default timeout read from `SYMFONY_PROCESS_TIMEOUT`). The other
+> hooks are not needed by a 4.0 core: doctrine/orm, symfony/error-handler and
+> symfony/dependency-injection are used as published, league/flysystem-bundle,
+> hwi/oauth-bundle, symfony/polyfill-mbstring, easycorp/easyadmin-bundle and
+> paypal/rest-api-sdk-php need nothing, and an application's `bin/console` keeps its own
+> `use Base\Console\Application;`. See
+> [the core's packages documentation](https://github.com/glitchr-studio/omnibase/blob/4.x/docs/20-architecture/packages.md)
+> and its [CHANGELOG](https://github.com/glitchr-studio/omnibase/blob/4.x/CHANGELOG.md).
+> Branch 2.0 stays as it is for the applications still on an omnibase core before 4.0;
+> to move, require omniscient/omnibase 4.x, allow `omnibridge/composer` instead of
+> `glitchr/base-plugin` in `config.allow-plugins`, and remove this package.
+
 
 
 ## Getting started
